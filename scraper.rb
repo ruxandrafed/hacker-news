@@ -4,10 +4,16 @@ require 'pry'
 require_relative 'post'
 require_relative 'comment'
 
+class NoURLEntered < StandardError ;end
+class WrongIDforURL < StandardError ;end
+
 class Scraper
+
+  attr_reader :url
 
   def initialize
     @url = ARGV[0]
+    raise NoURLEntered unless @url
   end
 
   # Creates an instance of Post after scraping content
@@ -56,13 +62,23 @@ class Scraper
 
   # Returns a nokogiri XML object
   def parse_html
-    Nokogiri::HTML(open(@url).read)
+    scraped_content = Nokogiri::HTML(open(@url).read)
+    raise WrongIDforURL if scraped_content.text == 'No such item.'
+    return scraped_content
   end
 
   def self.run
-    scraper = Scraper.new
-    scraper.create_post
-    scraper.post_statistics
+    begin
+      scraper = Scraper.new
+      scraper.create_post
+      scraper.post_statistics
+      rescue NoURLEntered
+        puts "No URL Entered. Please try again!"
+        exit
+      rescue WrongIDforURL
+        puts "Wrong URL format. Please check URL and try again!"
+        exit
+    end
   end
 
 end
